@@ -4,9 +4,9 @@
 # Ledger
 ### Know what you can spend. Keep tomorrow covered.
 
-A local-first personal CFO dashboard that turns your bills, paydays, groceries, and everyday spending into a clear plan—with a conservative allowance for the things you enjoy.
+A local-first personal CFO with a built-in financial AI assistant and advanced cash-flow planning. Cover your bills, build your emergency cushion, and make more room for the things you enjoy—with a conservative allowance that helps your discretionary money last and grow over time.
 
-[Get started](#get-started) · [Latest release](https://github.com/SketchOTP/Ledger/releases/latest) · [How it works](docs/planning.md) · [Privacy](docs/privacy.md)
+[Get started](#get-started) · [AI assistant](#your-built-in-financial-ai-assistant) · [Advanced planning](#advanced-planning-to-grow-your-disposable-income) · [Latest release](https://github.com/SketchOTP/Ledger/releases/latest) · [Privacy](docs/privacy.md)
 
 ![CI](https://github.com/SketchOTP/Ledger/actions/workflows/ci.yml/badge.svg)
 ![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue)
@@ -34,6 +34,59 @@ Checking balance alone doesn't tell you what you can afford. Ledger looks at dat
 <summary>See the mobile dashboard</summary>
 
 <img src="docs/screenshots/today-mobile.jpg" width="390" alt="Ledger mobile dashboard with fictional data" />
+
+</details>
+
+## Your built-in financial AI assistant
+
+**Ask Ledger** turns your recorded financial picture into a conversation. Open it on **Today** to ask about your bills, understand an allowance, or talk through a purchase before committing.
+
+- **Answers grounded in your plan.** The assistant receives a dated snapshot of your recorded balances, bills, income, spending, debts, household details, and six-month payment plan.
+- **Useful what-if discussions.** Ask how an extra expense, a smaller paycheck, or a different payment date could affect you. Proposed scenarios stay illustrative until you update your records and Ledger recalculates.
+- **A second look before you spend.** The assistant is instructed to respect your remaining biweekly allowance, protect emergency contributions and future pay periods, and distinguish expected income from money available now.
+- **A conversation you control.** Ledger keeps the conversation in the current page session; **New** or a page refresh clears it. The assistant provides explanations and suggestions without changing records or moving money.
+
+> “Why is my allowance lower this pay period?”
+>
+> “Can I buy groceries on Saturday and still cover the mortgage?”
+>
+> “What would a $200 repair do to my plan?”
+
+## Advanced planning to grow your disposable income
+
+Ledger's goal is to help you grow the money left for your own choices after bills, daily spending, groceries, and emergency saving. Its planning engine calculates the dollars; optional AI helps explain the picture and explore ways to improve it.
+
+| Capability | What it does for you |
+| --- | --- |
+| **Six-month cash-flow planning** | Tests dated income and obligations across at least six calendar months, so a comfortable balance today doesn't hide a future shortfall. |
+| **Payment timing** | Targets normal due dates and can use a recorded, lender-approved mortgage grace window when needed to resolve a shortfall. |
+| **Conservative allowance optimization** | Finds a sustainable equal biweekly allocation across the dated plan, releases 90%, and retains 10% within discretionary planning, while protecting future allowances and extra breathing room. |
+| **Room for discretionary growth** | Leaves part of each planned allocation unspent. Cash you actually retain can support greater future capacity; projected surplus is never added to today's spending permission. |
+| **Emergency saving on schedule** | Treats monthly cushion contributions as planned obligations, adjusts the final deposit, and stops at your chosen goal. |
+| **Household risk planning** | Uses recorded dependents, income risks, transport needs, and upcoming events to model household resilience scenarios. |
+| **AI-assisted income-growth ideas** | The optional household advisory engine combines recorded skills, assets, time, and constraints into bounded experiments, with evidence needed and test-capital limits. Ideas remain unverified until supported by facts. |
+
+On **Today**, expand **Long-term plan** when available to see the existing surplus split into **Save**, **Grow**, and **Keep free**. Its **Adjust plan** link opens the household plan, also available at `/household`. **Refresh plan** requests household risk synthesis and growth ideas from the configured provider. These are planning suggestions; they do not create income, transfer money, or increase your current allowance.
+
+<details>
+<summary><strong>Enable AI · setup, privacy, and availability</strong></summary>
+
+**Ask Ledger uses Codex CLI.** Install a compatible Codex CLI on the computer running the backend, make `codex` available to that process, and sign in as the same operating-system user that runs Ledger:
+
+```bash
+codex login
+codex login status
+```
+
+In **Advanced → Settings**, choose the **Financial assistant** model and reasoning effort, then save. Return to **Today → Ask Ledger**. The CLI must support Ledger's ephemeral, read-only invocation flags; a missing CLI, sign-in, or incompatible runtime prevents answers.
+
+**The standard Docker image does not bundle Codex CLI or sign-in credentials.** Use the Python installation for the simplest host-based assistant setup, or provision a compatible authenticated CLI inside your own container. Host sign-in alone does not enable chat inside the stock container.
+
+**Household AI synthesis uses a separate provider setting.** In **Advanced → Settings**, configure a supported provider such as LM Studio, an OpenAI-compatible endpoint, or Codex CLI. Assistant model preferences are separate from the planning/research model. Selecting a local provider for household synthesis does not switch Ask Ledger away from Codex. The default `mock` provider produces placeholders; providers marked as unimplemented cannot generate real advice.
+
+**Local storage does not mean every AI request stays local.** Ask Ledger sends the supplied financial snapshot and recent conversation to Codex; other optional AI features send context to their configured provider. Provider retention and processing policies still apply. Ledger does not save assistant conversations in its database. See [privacy and security](docs/privacy.md).
+
+All dated cash-flow calculations, allowance limits, and emergency contribution schedules work without AI. AI answers can be mistaken; the recorded plan remains the reference for spending decisions. Growth experiments are hypotheses, not verified demand, earnings, or guaranteed returns.
 
 </details>
 
