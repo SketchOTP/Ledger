@@ -55,6 +55,22 @@ Already using port 9543? Run `LEDGER_PORT=19543 docker compose up --build -d` an
 
 To update, back up first, then run `git pull --ff-only` and `docker compose up --build -d`. `docker compose down` stops the app and preserves the volume; **do not add `-v` unless you intend to delete your data**. See [deployment and backups](docs/local-deployment.md).
 
+### Prebuilt release downloads
+
+The [release page](https://github.com/SketchOTP/Ledger/releases/latest) also includes:
+
+- **Ledger-v1.0.0.zip** — reviewed source plus the compiled web interface. Extract it and follow the Python setup below; you can skip the npm commands.
+- **Ledger-v1.0.0-linux-amd64-docker.tar.gz** — a ready-built image for x86-64 Linux containers. Download it, then:
+
+```bash
+docker load -i Ledger-v1.0.0-linux-amd64-docker.tar.gz
+docker run -d --name ledger --restart unless-stopped \
+  -p 127.0.0.1:9543:9543 \
+  -v ledger-data:/var/lib/ledger sketchotp/ledger:1.0.0
+```
+
+Open http://localhost:9543. The release includes SHA-256 checksums. For other architectures, build from source with Compose; the prebuilt image was verified on Linux amd64.
+
 ### Python + Node
 
 Requires Python 3.11+ and Node.js 22.18+.
