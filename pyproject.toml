@@ -1,0 +1,51 @@
+[project]
+name = "ledger-personal-cfo"
+version = "1.0.0"
+description = "Local-first personal CFO command center"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.141.1",
+    "uvicorn[standard]==0.52.4",
+    "sqlmodel==0.0.42",
+    "pydantic==2.13.5",
+    "pydantic-settings==2.15.0",
+    "python-multipart==0.0.32",
+    "openai==3.13.0",
+    "jsonschema==4.26.0",
+    "httpx==0.28.1",
+    "apscheduler==3.11.3",
+    "pywebpush==2.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "ruff==0.16.7",
+    "httpx==0.28.1",
+]
+
+[project.scripts]
+ledgermind-doctor = "app.main:run_doctor"
+
+[tool.pytest.ini_options]
+testpaths = ["app/tests"]
+asyncio_mode = "auto"
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = [".github", "reports", "frontend"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

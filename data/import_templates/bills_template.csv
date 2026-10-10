@@ -1,0 +1,2 @@
+name,amount,due_date,recurrence,required,category,notes
+Example rent,1200,2026-10-01,monthly,true,Housing,

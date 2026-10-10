@@ -1,0 +1,18 @@
+[Unit]
+Description=LedgerMind CFO API (local household appliance)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=REPLACE_USER
+Group=REPLACE_USER
+WorkingDirectory=REPLACE_ROOT
+EnvironmentFile=-REPLACE_ROOT/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=REPLACE_ROOT/.venv/bin/python -m app.main
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

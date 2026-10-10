@@ -1,0 +1,18 @@
+[Unit]
+Description=LedgerMind CFO scheduler loop (calls run-due every 15 minutes)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=REPLACE_USER
+Group=REPLACE_USER
+WorkingDirectory=REPLACE_ROOT
+EnvironmentFile=-REPLACE_ROOT/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=REPLACE_ROOT/.venv/bin/python REPLACE_ROOT/scripts/run_scheduler_loop.py
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

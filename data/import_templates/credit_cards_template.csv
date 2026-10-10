@@ -1,0 +1,2 @@
+issuer,card_name,balance,credit_limit,apr,minimum_payment,due_date,rewards_type,annual_fee,notes
+Example bank,Example card,1000,5000,19.99,50,2026-10-20,cashback,0,

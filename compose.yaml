@@ -1,0 +1,16 @@
+services:
+  ledger:
+    build: .
+    ports:
+      - "127.0.0.1:${LEDGER_PORT:-9543}:9543"
+    volumes:
+      - ledger-data:/var/lib/ledger
+    restart: unless-stopped
+    environment:
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
+      AI_ALLOW_REMOTE_OPENAI: ${AI_ALLOW_REMOTE_OPENAI:-false}
+volumes:
+  ledger-data:
