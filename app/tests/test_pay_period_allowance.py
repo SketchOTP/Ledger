@@ -92,7 +92,7 @@ def test_month_five_bill_is_already_reserved_today(session):
     assert min(row['balanceAfterSpending'] - row['cushion'] for row in result['projection']) >= result['budget'] - .005
 
 
-def test_spent_allowance_is_not_replenished_by_reconciliation_or_refresh(session):
+def test_paid_allowance_is_consumed_independently_of_legacy_reconciliation_flag(session):
     setup_plan(session, monthly=0)
     before = plan(session)
     purchase = Transaction(amount=20, category='Discretionary', transaction_date=DAY,
@@ -100,12 +100,17 @@ def test_spent_allowance_is_not_replenished_by_reconciliation_or_refresh(session
     session.add(purchase)
     session.commit()
     pending = plan(session)
-    assert pending['remaining'] == pytest.approx(before['remaining'] - 20)
+    assert pending['spent'] == 20
+    assert pending['remaining'] == pytest.approx(pending['budget'] - 20)
+    assert pending['remaining'] < before['remaining']
     purchase.reflected_in_checking = True
     session.add(purchase)
     session.commit()
+    assert plan(session) == pending  # Legacy reconciliation flag has no cash effect.
     confirmed = plan(session, cash=2980)
-    assert confirmed['remaining'] == pending['remaining']
+    assert confirmed['spent'] == 20
+    assert confirmed['remaining'] <= pending['remaining']
+    assert confirmed['remaining'] == pytest.approx(confirmed['budget'] - 20)
     assert plan(session, cash=2980)['remaining'] == confirmed['remaining']
     next_period = plan(session, cash=2980, day=DAY + timedelta(days=14))
     assert next_period['spent'] == 0
@@ -179,7 +184,7 @@ def test_allowance_purchase_stays_consumed_after_bank_confirmation(tmp_path):
         assert response.status_code == 200, response.text
         assert client.get('/api/v2/today').json()['checking_activity_pending'] == 0
         assert client.get('/api/v2/today').json()['financial_state']['allowance']['spent'] == 20
-        assert client.get('/api/spending/pending-checking').json()['count'] == 1
+        assert client.get('/api/spending/pending-checking').json()['count'] == 0
         response = client.post('/api/profile/borrower', json={
             'checking_balance': 2980, 'checking_balance_confirmed': True, 'includes_recorded_spending': True})
         assert response.status_code == 200, response.text

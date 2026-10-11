@@ -24,7 +24,7 @@ Checking balance alone doesn't tell you what you can afford. Ledger looks at dat
 - **See the essentials separately.** Bills, daily spending, groceries, discretionary planning, your biweekly allowance, and the actual emergency cushion each have their own place.
 - **Protect future pay periods.** Your allowance accounts for future obligations and keeps breathing room. It doesn't invite you to spend the entire six-month surplus today.
 - **Build your emergency cushion.** Plan a monthly contribution toward an adjustable goal. A due-soon deposit stops at the goal and caps the final contribution.
-- **Keep pending purchases visible.** A recorded purchase remains reserved while it awaits your checking balance. Marking it recorded doesn't pretend it has cleared.
+- **Mark purchases paid immediately.** Recorded daily spending, groceries, and discretionary purchases leave remaining cash needs immediately. Ledger plans from the checking balance you enter; update it separately whenever needed.
 - **See pressure before payday.** A dated cash-flow chart makes approaching bills and projected shortfalls easier to spot.
 - **Keep the page calm.** Three tabs—Today, Money, Advanced—with details tucked behind expandable controls.
 
@@ -112,14 +112,14 @@ To update, back up first, then run `git pull --ff-only` and `docker compose up -
 
 The [release page](https://github.com/SketchOTP/Ledger/releases/latest) also includes:
 
-- **Ledger-v1.0.0.zip** — reviewed source plus the compiled web interface. Extract it and follow the Python setup below; you can skip the npm commands.
-- **Ledger-v1.0.0-linux-amd64-docker.tar.gz** — a ready-built image for x86-64 Linux containers. Download it, then:
+- **Ledger-v1.0.1.zip** — reviewed source plus the compiled web interface. Extract it and follow the Python setup below; you can skip the npm commands.
+- **Ledger-v1.0.1-linux-amd64-docker.tar.gz** — a ready-built image for x86-64 Linux containers. Download it, then:
 
 ```bash
-docker load -i Ledger-v1.0.0-linux-amd64-docker.tar.gz
+docker load -i Ledger-v1.0.1-linux-amd64-docker.tar.gz
 docker run -d --name ledger --restart unless-stopped \
   -p 127.0.0.1:9543:9543 \
-  -v ledger-data:/var/lib/ledger sketchotp/ledger:1.0.0
+  -v ledger-data:/var/lib/ledger sketchotp/ledger:1.0.1
 ```
 
 Open http://localhost:9543. The release includes SHA-256 checksums. For other architectures, build from source with Compose; the prebuilt image was verified on Linux amd64.

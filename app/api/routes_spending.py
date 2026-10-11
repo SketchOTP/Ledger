@@ -5,7 +5,6 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import func, or_
 from sqlmodel import Session, select
 
 from app.api.deps import get_db
@@ -39,11 +38,8 @@ def list_transactions(session: Session = Depends(get_db)):
 
 @router.get("/pending-checking")
 def pending_checking(session: Session = Depends(get_db)):
-    pending = session.exec(select(Transaction).where(
-        or_(Transaction.planned_budget_category_id.is_not(None), func.lower(Transaction.category) == "discretionary"),
-        Transaction.reflected_in_checking.is_(False),
-    )).all()
-    return {"count": len(pending)}
+    # Retained for older clients; recorded purchases are paid, never pending.
+    return {"count": 0}
 
 
 @router.post("/transactions")
@@ -59,6 +55,7 @@ def create_transaction(data: dict, session: Session = Depends(get_db)):
         category=data["category"],
         description=data.get("description", ""),
         transaction_date=date.fromisoformat(data["transaction_date"]),
+        reflected_in_checking=True,
     )
     session.add(obj)
     session.commit()
@@ -69,7 +66,7 @@ def create_transaction(data: dict, session: Session = Depends(get_db)):
 
 @router.post("/record-planned")
 def record_planned_spending(body: PlannedSpendingBody, session: Session = Depends(get_db)):
-    """Record a real purchase; checking is changed separately by the owner."""
+    """Mark the purchase paid; use owner-entered checking without charging it again."""
     category = session.get(BudgetCategory, body.budget_category_id)
     if category is None or not (_is_weekly_groceries(category) or category.period == "day"):
         raise HTTPException(404, "Planned spending item not found.")
@@ -96,7 +93,7 @@ def record_planned_spending(body: PlannedSpendingBody, session: Session = Depend
         description="Recorded from Today", transaction_date=body.transaction_date,
         planned_budget_category_id=category.id,
         planned_spending_date=body.planned_date,
-        reflected_in_checking=False,
+        reflected_in_checking=True,
     )
     session.add(obj)
     session.commit()

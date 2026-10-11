@@ -146,13 +146,13 @@ export default function Today() {
           {allowance && <details className="dated-payment-card"><summary><DashboardIcon kind="wallet" /> Record spending</summary><form className="planned-spending-form" onSubmit={event => void recordOptionalPurchase(event)}>
             <label>Record a discretionary purchase <input className="input" aria-label="Discretionary purchase amount" type="number" min="0.01" step="0.01" required value={optionalPurchase} onChange={event => setOptionalPurchase(event.target.value)} /></label>
             <Btn type="submit" disabled={busy}>Record allowance spending</Btn>
-            <p className="field-hint">Use the amount you actually spent, even if it exceeded the allowance. Then update checking after the purchase clears.</p>
+            <p className="field-hint">Use the amount you actually spent, even if it exceeded the allowance. It counts as paid immediately. Update checking separately whenever needed.</p>
           </form></details>}
           {!optionalVerified && <details className="dated-payment-card"><summary>Review plan</summary><p className="today-money-explanation">{error ? "The latest calculation could not be verified. Refresh before relying on a spending amount." : today.checking_activity_pending ? "You marked a payment or income as done. Update your checking balance below before relying on an extra-spending amount." : rescue && !rescue.normal_spending_entered ? "Add a usual amount for groceries and everyday needs before treating any money as optional." : breakdown?.extra_reason || "Check the dated plan before optional spending."}</p></details>}
           {paymentPlan && <details className="dated-payment-card"><summary><DashboardIcon kind="calendar" /> Payment schedule</summary>
             <div className="section-head"><p className="subtitle">Income, bills, and your weekly grocery trips are dated below. Ordinary daily spending is included in each running balance without filling this list with daily entries.</p><Link to="/money?section=bills">Update payments</Link></div>
             <p className="field-hint">Start with {exactMoney(paymentPlan.opening_checking)}. Add {exactMoney(breakdown?.income_planning)} expected income, subtract {exactMoney(breakdown?.required_planning)} required payments and {exactMoney(breakdown?.normal_spending_planning)} normal spending; projected six-month ending checking is {exactMoney(paymentPlan.projected_ending_checking)}. The lowest dated point is {exactMoney(paymentPlan.lowest_checking)}. Income is shown before payments on the same day; confirm it has cleared before relying on it. This running balance shows bills and essentials before emergency earmarks and allowances. The allowance calculation also protects monthly emergency saving and future pay periods; it is the spending limit to follow.</p>
-            <ol className="dated-payment-list">{paymentSteps.map((row, index) => <li key={`${row.date}-${row.category}-${index}`} className="dated-payment-row"><div><strong>{friendlyDate(row.date)} · {row.kind === "income" ? "Expect" : row.awaiting_checking_update ? "Recorded · pending checking update:" : row.spending_kind === "groceries" ? "Plan groceries" : "Pay"} {row.name}</strong>{row.awaiting_checking_update && <span className="field-hint"> {exactMoney(row.pending_checking_amount)} is already reserved in this forecast. Do not pay or record it again; update checking after the balance includes it.</span>}{row.spending_kind === "groceries" && row.suggested_day && !row.awaiting_checking_update && <span className="field-hint"> Suggested shopping day; change it in Money if another day works better.</span>}{row.grace_used && <span className="field-hint"> Mortgage grace needed: due {friendlyDate(row.original_due_date)}, plan payment by {friendlyDate(row.date)} before the recorded late-fee deadline {friendlyDate(row.late_fee_date)}. Confirm income has cleared.</span>}{row.deferred_once && <span className="field-hint"> Approved one-time move from {friendlyDate(row.original_due_date)}; the next regular payment is unchanged.</span>}{!row.deferred_once && !row.grace_used && row.original_due_date && row.original_due_date < row.date && <span className="field-hint"> Originally due {friendlyDate(row.original_due_date)}; check whether it is already paid.</span>}</div><div className="dated-payment-amount"><strong>{row.kind === "income" ? "+" : "−"}{exactMoney(row.amount)}</strong><span>Then {exactMoney(row.projected_balance_after)}</span></div></li>)}</ol>
+            <ol className="dated-payment-list">{paymentSteps.map((row, index) => <li key={`${row.date}-${row.category}-${index}`} className="dated-payment-row"><div><strong>{friendlyDate(row.date)} · {row.kind === "income" ? "Expect" : row.spending_kind === "groceries" ? "Plan groceries" : "Pay"} {row.name}</strong>{row.spending_kind === "groceries" && row.suggested_day && <span className="field-hint"> Suggested shopping day; change it in Money if another day works better.</span>}{row.grace_used && <span className="field-hint"> Mortgage grace needed: due {friendlyDate(row.original_due_date)}, plan payment by {friendlyDate(row.date)} before the recorded late-fee deadline {friendlyDate(row.late_fee_date)}. Confirm income has cleared.</span>}{row.deferred_once && <span className="field-hint"> Approved one-time move from {friendlyDate(row.original_due_date)}; the next regular payment is unchanged.</span>}{!row.deferred_once && !row.grace_used && row.original_due_date && row.original_due_date < row.date && <span className="field-hint"> Originally due {friendlyDate(row.original_due_date)}; check whether it is already paid.</span>}</div><div className="dated-payment-amount"><strong>{row.kind === "income" ? "+" : "−"}{exactMoney(row.amount)}</strong><span>Then {exactMoney(row.projected_balance_after)}</span></div></li>)}</ol>
             <p className="field-hint">This is a planning order, not an automatic payment. If a grocery trip, paycheck, bill, or checking balance differs, update Money and refresh Today.</p>
           </details>}
           </div>
@@ -177,7 +177,7 @@ export default function Today() {
 
         <div className="today-columns">
           <Card><div className="section-head"><h3>Due soon</h3><Link to="/money?section=bills">Manage money</Link></div>
-            <details className="dashboard-help"><summary>How to use</summary><p className="field-hint">Mark an item only when it happened. Pending purchases stay reserved until checking includes them. Update checking after your bank balance changes.</p></details>
+            <details className="dashboard-help"><summary>How to use</summary><p className="field-hint">Mark an item when it is paid. Paid purchases leave the remaining plan immediately and are not subtracted from checking again. Update checking separately whenever needed.</p></details>
             <DueSoonItems today={today} busy={busy} onMark={mark} onRecord={(item) => { void recordSpending(item); }} onCushion={async () => { setBusy(true); try { await api.recordCushionContribution(today.cushion_step.amount); await load(); } catch (err) { setError(err instanceof Error ? err.message : "Could not record the cushion step."); } finally { setBusy(false); } }} />
 
           </Card>
@@ -228,10 +228,10 @@ function DueSoonItems({ today, busy, onMark, onRecord, onCushion }: {
   const entries: Entry[] = [
     ...today.immediate_obligations.map((row): Entry => ({ kind: "scheduled", date: row.due_date || "", row })),
     ...today.spending_attention.grocery_trips
-      .filter((row) => row.awaiting_checking_update || (!row.recorded && row.recorded_amount <= 0))
+      .filter((row) => !row.recorded && row.recorded_amount <= 0)
       .map((row): Entry => ({ kind: "groceries", date: row.planned_date, row })),
     ...today.spending_attention.everyday
-      .filter((row) => row.awaiting_checking_update || (!row.recorded && row.recorded_amount <= 0))
+      .filter((row) => !row.recorded && row.recorded_amount <= 0)
       .map((row): Entry => ({ kind: "daily", date: row.planned_date, row })),
     ...(today.cushion_step.amount > 0 && !today.cushion_step.recorded
       ? [{ kind: "cushion" as const, date: today.cushion_step.date }]
@@ -267,7 +267,7 @@ function DueSoonItems({ today, busy, onMark, onRecord, onCushion }: {
     const isToday = entry.date === localDate();
     const canRecord = entry.kind === "groceries" ? entry.date <= localDate() : isToday;
     const title = entry.kind === "groceries" ? "Groceries" : row.name;
-    const actionLabel = row.awaiting_checking_update ? `${title} recorded; awaiting checking update` : recorded ? `${title} already recorded as spent`
+    const actionLabel = recorded ? `${title} already recorded as spent`
       : busy ? "Updating…"
       : canRecord ? `Mark ${title} paid (${exactMoney(row.planned_amount)})`
       : `Available to record on ${friendlyDate(entry.date)}`;
@@ -275,13 +275,13 @@ function DueSoonItems({ today, busy, onMark, onRecord, onCushion }: {
       title={title}
       subtitle={`${friendlyDate(entry.date)} · ${recorded ? `${exactMoney(row.recorded_amount)} recorded` : "Planned"}`}
       trailing={`−${exactMoney(recorded ? row.recorded_amount : row.planned_amount)}`}
-      tone="danger" actionLabel={actionLabel} disabled={busy || recorded || !canRecord} resolved={recorded && !row.awaiting_checking_update} pending={row.awaiting_checking_update}
+      tone="danger" actionLabel={actionLabel} disabled={busy || recorded || !canRecord} resolved={recorded}
       onResolve={() => onRecord(row)} />;
   })}</div>;
 }
 
 function DueSoonRow({
-  title, subtitle, trailing, tone, actionLabel, disabled = false, resolved = false, pending = false, onResolve,
+  title, subtitle, trailing, tone, actionLabel, disabled = false, resolved = false, onResolve,
 }: {
   title: string;
   subtitle: string;
@@ -290,14 +290,13 @@ function DueSoonRow({
   actionLabel: string;
   disabled?: boolean;
   resolved?: boolean;
-  pending?: boolean;
   onResolve: () => void;
 }) {
   return <div className="list-row due-soon-row">
     <div className="list-row-body"><div className="list-row-title">{title}</div><div className="list-row-sub">{subtitle}</div></div>
     <div className={`list-row-trail${tone === "danger" ? " danger" : tone === "safe" ? " safe" : ""}`}>{trailing}</div>
-    {pending ? <Pill tone="tight">Pending</Pill> : <button type="button" className={`due-soon-resolve${resolved ? " is-resolved" : ""}`} onClick={onResolve}
-      aria-label={actionLabel} title={actionLabel} disabled={disabled}><IconCheckCircle /></button>}
+    <button type="button" className={`due-soon-resolve${resolved ? " is-resolved" : ""}`} onClick={onResolve}
+      aria-label={actionLabel} title={actionLabel} disabled={disabled}><IconCheckCircle /></button>
   </div>;
 }
 
@@ -305,7 +304,7 @@ function CheckingQuickUpdate({ pendingActivity, onSaved }: {
   pendingActivity: number;
   onSaved: () => Promise<void>;
 }) {
-  return <Card className="dashboard-tool"><details><summary><DashboardIcon kind="wallet" /> Update checking {pendingActivity > 0 && <Pill tone="tight">{pendingActivity} pending</Pill>}</summary>
+  return <Card className="dashboard-tool"><details><summary><DashboardIcon kind="wallet" /> Update checking {pendingActivity > 0 && <Pill tone="tight">Update balance</Pill>}</summary>
     <div className="section-head"><h3>Balances</h3><Link to="/money?section=cash_on_hand">Manage</Link></div>
     <CashProfileForm onSaved={() => { void onSaved(); }} />
   </details></Card>;

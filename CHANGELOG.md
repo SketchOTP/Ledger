@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.1 — Paid or unpaid purchases
+
+- Remove the pending purchase stage for daily spending, groceries, and discretionary purchases.
+- Stop reserving paid purchases against the manually entered checking balance a second time, including older recorded purchases.
+- Remove the checking reconciliation checkbox and pending purchase labels.
+- Preserve future unpaid essentials, unspent daily budgets, and recorded discretionary allowance usage.
+- Add five paid-purchase regression cases and update the release/setup instructions. No database migration or purchase re-entry is required.
+
 ## 1.0.0 — First public Ledger release
 
 - Plan at least six calendar months ahead with dated bills, income, daily spending, and groceries.

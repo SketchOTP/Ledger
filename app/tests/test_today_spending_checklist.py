@@ -24,7 +24,7 @@ from app.db.session import _sqlite_migrate_checking_confirmation, _sqlite_migrat
 from app.main import app
 
 
-def test_daily_and_grocery_purchases_stay_reserved_until_checking_reflects_them(session):
+def test_paid_purchases_leave_only_unspent_daily_budget(session):
     today = date.today()
     previous_saturday = today - timedelta(days=((today.weekday() - 5) % 7) or 7)
     groceries = BudgetCategory(name="Groceries", monthly_limit=435, usual_amount=100,
@@ -40,9 +40,9 @@ def test_daily_and_grocery_purchases_stay_reserved_until_checking_reflects_them(
                             planned_budget_category_id=daily.id, planned_spending_date=today))
     session.commit()
     rows = planned_spending_daily_events(session, today, today + timedelta(days=7))
-    assert next(row for row in rows if row["spending_kind"] == "recorded_pending")["amount"] == 80
-    assert next(row for row in rows if row["spending_kind"] == "daily")["amount"] == 25
-    assert spending_attention(session, today)["pending_checking_count"] == 2
+    assert not any(row["spending_kind"] == "recorded_pending" for row in rows)
+    assert next(row for row in rows if row["spending_kind"] == "daily")["amount"] == 15
+    assert spending_attention(session, today)["pending_checking_count"] == 0
 
     for transaction in session.exec(select(Transaction)).all():
         transaction.reflected_in_checking = True
@@ -54,7 +54,7 @@ def test_daily_and_grocery_purchases_stay_reserved_until_checking_reflects_them(
     assert spending_attention(session, today)["pending_checking_count"] == 0
 
 
-def test_current_grocery_trip_replaces_estimate_and_then_leaves_forecast(session):
+def test_recorded_grocery_trip_immediately_leaves_forecast(session):
     saturday = date(2026, 9, 26)
     groceries = BudgetCategory(name="Groceries", monthly_limit=435, usual_amount=100,
                                period="week", planned_weekday=5)
@@ -65,7 +65,7 @@ def test_current_grocery_trip_replaces_estimate_and_then_leaves_forecast(session
                             planned_spending_date=saturday))
     session.commit()
     rows = planned_spending_daily_events(session, saturday, saturday)
-    assert [row["amount"] for row in rows if row["spending_kind"] == "groceries"] == [80]
+    assert not any(row["spending_kind"] == "groceries" for row in rows)
     transaction = session.exec(select(Transaction)).one()
     transaction.reflected_in_checking = True
     session.add(transaction)
@@ -74,7 +74,7 @@ def test_current_grocery_trip_replaces_estimate_and_then_leaves_forecast(session
     assert not any(row["spending_kind"] == "groceries" for row in rows)
 
 
-def test_record_spent_does_not_change_checking_and_reconciles_only_on_confirmation():
+def test_record_spent_completes_purchase_without_changing_checking():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
@@ -95,19 +95,19 @@ def test_record_spent_does_not_change_checking_and_reconciles_only_on_confirmati
             assert recorded.status_code == 200, recorded.text
             assert session.exec(select(BorrowerProfile)).first().checking_balance == 1000
             assert client.post("/api/spending/record-planned", json=payload).status_code == 409
-            assert client.get("/api/v2/today").json()["spending_attention"]["pending_checking_count"] == 1
+            assert client.get("/api/v2/today").json()["spending_attention"]["pending_checking_count"] == 0
             update = client.post("/api/profile/borrower", json={
                 "checking_balance": 1000, "checking_balance_confirmed": True,
                 "includes_recorded_spending": False,
             })
             assert update.status_code == 200, update.text
             pending = client.get("/api/v2/today").json()
-            assert pending["spending_attention"]["pending_checking_count"] == 1
+            assert pending["spending_attention"]["pending_checking_count"] == 0
             assert sum(row.get("pending_checking_amount", 0)
-                       for row in pending["financial_state"]["payment_plan"]["rows"]) == 80
+                       for row in pending["financial_state"]["payment_plan"]["rows"]) == 0
             update = client.post("/api/profile/borrower", json={"checking_balance": 920})
             assert update.status_code == 200, update.text
-            assert session.exec(select(Transaction)).one().reflected_in_checking is False
+            assert session.exec(select(Transaction)).one().reflected_in_checking is True
             update = client.post("/api/profile/borrower", json={
                 "checking_balance": 920, "includes_recorded_spending": True,
             })
@@ -119,7 +119,7 @@ def test_record_spent_does_not_change_checking_and_reconciles_only_on_confirmati
 
 
 @pytest.mark.parametrize("days_after_purchase", [0, 1])
-def test_grocery_plan_identifies_pending_cash_and_deducts_purchase_exactly_once(session, days_after_purchase):
+def test_paid_grocery_never_reenters_forecast_when_checking_is_updated(session, days_after_purchase):
     saturday = date(2026, 10, 10)
     as_of = saturday + timedelta(days=days_after_purchase)
     profile = BorrowerProfile(checking_balance=1000, target_buffer=0, cash_cushion_balance=0)
@@ -133,14 +133,9 @@ def test_grocery_plan_identifies_pending_cash_and_deducts_purchase_exactly_once(
     session.add(purchase)
     session.commit()
     before = build_liquidity_plan(session, as_of=as_of)["money_state"]["payment_plan"]
-    pending = [row for row in before["rows"] if row.get("awaiting_checking_update")]
-    assert len(pending) == 1
-    assert pending[0]["amount"] == pending[0]["pending_checking_amount"] == 80
-    assert pending[0]["spending_kind"] == ("groceries" if days_after_purchase == 0 else "recorded_pending")
-    if days_after_purchase:
-        assert pending[0]["pending_grocery_amount"] == 80
+    assert not any(row.get("awaiting_checking_update") for row in before["rows"])
     assert next(row for row in spending_attention(session, as_of)["grocery_trips"]
-                if row["planned_date"] == saturday.isoformat())["awaiting_checking_update"] is True
+                if row["planned_date"] == saturday.isoformat())["awaiting_checking_update"] is False
 
     purchase.reflected_in_checking = True
     profile.checking_balance = 920
@@ -149,7 +144,7 @@ def test_grocery_plan_identifies_pending_cash_and_deducts_purchase_exactly_once(
     session.commit()
     after = build_liquidity_plan(session, as_of=as_of)["money_state"]["payment_plan"]
     assert not any(row.get("awaiting_checking_update") for row in after["rows"])
-    assert after["projected_ending_checking"] == before["projected_ending_checking"]
+    assert after["projected_ending_checking"] == before["projected_ending_checking"] - 80
     assert spending_attention(session, as_of)["pending_checking_count"] == 0
     assert any(row.get("spending_kind") == "groceries" and row["amount"] == 100 for row in after["rows"])
 

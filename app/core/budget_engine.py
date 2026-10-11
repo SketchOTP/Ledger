@@ -107,7 +107,7 @@ def spending_attention(session: Session, as_of: date) -> dict[str, Any]:
                     "planned_amount": round(float(category.usual_amount or 0), 2),
                     "recorded_amount": round(sum(row.amount for row in recorded), 2),
                     "recorded": bool(recorded),
-                    "awaiting_checking_update": any(not row.reflected_in_checking for row in recorded),
+                    "awaiting_checking_update": False,
                 })
                 planned += timedelta(days=7)
         elif category.period == "day" and category.usual_amount is not None:
@@ -120,12 +120,12 @@ def spending_attention(session: Session, as_of: date) -> dict[str, Any]:
                     "planned_date": planned.isoformat(),
                     "planned_amount": round(float(category.usual_amount), 2),
                     "recorded_amount": round(sum(row.amount for row in recorded), 2),
-                    "awaiting_checking_update": any(not row.reflected_in_checking for row in recorded),
+                    "awaiting_checking_update": False,
                 })
     return {
         "grocery_trips": trips,
         "everyday": everyday,
-        "pending_checking_count": sum(not row.reflected_in_checking for row in linked),
+        "pending_checking_count": 0,
     }
 
 
@@ -190,45 +190,26 @@ def planned_spending_daily_events(
             scheduled = (daily_cents + (1 if day_index < remainder_cents else 0)) / 100
             daily_actual = [row for row in linked_by_day.get(date_cursor, [])
                             if row.planned_budget_category_id in daily_category_ids]
-            pending = sum(row.amount for row in daily_actual if not row.reflected_in_checking)
             remaining = max(0.0, scheduled - sum(row.amount for row in daily_actual))
             events.append({
                 "date": date_cursor.isoformat(), "kind": "obligation",
-                "amount": round(pending + remaining, 2),
+                "amount": round(remaining, 2),
                 "name": "Everyday spending", "spending_kind": "daily",
                 "category": "living",
-                "awaiting_checking_update": pending > 0,
-                "pending_checking_amount": round(pending, 2),
+                "awaiting_checking_update": False,
+                "pending_checking_amount": 0.0,
             })
             date_cursor += timedelta(days=1)
             day_index += 1
         day = segment_end + timedelta(days=1)
-    # A purchase logged before this window but not yet included in the owner's
-    # manually entered checking balance still needs to leave the cash timeline.
-    earlier_pending = session.exec(select(Transaction).where(
-        Transaction.planned_budget_category_id.is_not(None),
-        Transaction.planned_spending_date < start,
-        Transaction.reflected_in_checking.is_(False),
-    )).all()
-    pending_amount = round(sum(row.amount for row in earlier_pending), 2)
-    if pending_amount > 0:
-        grocery_ids = {row.id for row in groceries}
-        events.append({
-            "date": start.isoformat(), "kind": "obligation",
-            "amount": pending_amount, "name": "Recorded spending awaiting checking update",
-            "spending_kind": "recorded_pending", "category": "living",
-            "awaiting_checking_update": True,
-            "pending_checking_amount": pending_amount,
-            "pending_grocery_amount": round(sum(row.amount for row in earlier_pending
-                                                if row.planned_budget_category_id in grocery_ids), 2),
-        })
+    # A recorded purchase is paid, including legacy rows whose historical
+    # reconciliation flag is false. Checking is entered separately by the owner.
     for category in groceries:
         target = int(category.planned_weekday if category.planned_weekday is not None else 5)
         trip = start + timedelta(days=(target - start.weekday()) % 7)
         while trip <= end:
             recorded = linked_by_trip.get((category.id, trip), [])
-            amount = (sum(row.amount for row in recorded if not row.reflected_in_checking)
-                      if recorded else float(category.usual_amount or 0))
+            amount = 0.0 if recorded else float(category.usual_amount or 0)
             if amount <= 0:
                 trip += timedelta(days=7)
                 continue
@@ -237,13 +218,13 @@ def planned_spending_daily_events(
                 "amount": round(amount, 2),
                 "name": category.name, "category": "living",
                 "spending_kind": "groceries", "suggested_day": True,
-                "awaiting_checking_update": bool(recorded),
-                "pending_checking_amount": round(amount, 2) if recorded else 0.0,
+                "awaiting_checking_update": False,
+                "pending_checking_amount": 0.0,
             })
             trip += timedelta(days=7)
     # A stale manual balance must not release yesterday's assumed essentials
     # just because the forecast rolls forward. Recorded purchases are already
-    # handled above; reserve only the unrecorded remainder of elapsed habits.
+    # paid; reserve only the unrecorded remainder of elapsed habits.
     profile = session.exec(select(BorrowerProfile)).first()
     if profile and profile.pay_period_allowance_enabled and profile.checking_confirmed_at:
         confirmed_day = profile.checking_confirmed_at.date()

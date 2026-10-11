@@ -1,4 +1,24 @@
-# Ledger 1.0.0 verification
+# Ledger release verification
+
+## 1.0.1 — Paid or unpaid purchases
+
+Release preparation: 2026-10-10. The patch removes purchase pending states and duplicate reservations against owner-entered checking, including older recorded purchases. Future unpaid essentials and discretionary allowance usage remain protected. No database migration or purchase re-entry is required.
+
+| Check | Result |
+| --- | --- |
+| Complete backend regression with locked dependencies and built frontend | PASSED — 608 tests |
+| Existing warning baseline gate | PASSED — 0 warnings |
+| Reserve/chart regression | PASSED — 11 tests |
+| Ruff and production TypeScript/Vite build | PASSED |
+| npm dependency audit | PASSED — 0 reported vulnerabilities |
+| Fresh Docker signup, authentication boundary and web shell | PASSED |
+| Fresh Docker paid daily/grocery purchases, unchanged checking and future essentials | PASSED |
+| Docker application, assets, templates, notices and requirements match release source/build | PASSED — 290 files |
+| Gitleaks 8.30.1 on release source | PASSED — 0 findings |
+
+Validation note: the initial backend run overlapped the frontend build, so the app loaded before assets were available and two routing checks failed. It also encountered two read-only pytest-cache warnings. The final complete run started after the build, used an external temporary cache, and passed all 608 tests with zero warnings. Desktop/mobile rendered review and backup/restore were not repeated for this patch; the earlier 1.0.0 evidence below remains historical.
+
+## 1.0.0
 
 Release preparation: 2026-10-10. All UI screenshots show an isolated fictional household.
 

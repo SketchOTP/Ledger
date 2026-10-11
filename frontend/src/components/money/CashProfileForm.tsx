@@ -31,7 +31,6 @@ export function CashProfileForm({
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [includeCashflow, setIncludeCashflow] = useState(true);
-  const [includesRecordedSpending, setIncludesRecordedSpending] = useState(false);
 
   const reloadAccounts = () =>
     api.liquidAccounts().then((x) => setAccounts(x as LiquidAccountRow[]));
@@ -56,8 +55,6 @@ export function CashProfileForm({
       cushion_monthly_contribution: Number(fd.get("cushion_monthly_contribution")),
       target_buffer: parseFloat(String(fd.get("target_buffer"))) || 0,
       cash_cushion_balance: fd.get("cash_cushion_balance") === "" ? null : Number(fd.get("cash_cushion_balance")),
-      // A current bank balance may still exclude a processing purchase.
-      includes_recorded_spending: includesRecordedSpending,
       checking_balance_confirmed: true,
     };
     try {
@@ -69,7 +66,6 @@ export function CashProfileForm({
       }
       await api.upsertBorrower(body);
       setBorrower(body);
-      setIncludesRecordedSpending(false);
       onSaved();
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : "Save failed");
@@ -86,7 +82,7 @@ export function CashProfileForm({
   return (
     <form id={formId} className="cash-profile-form" onSubmit={submit}>
       <div className="cash-profile-grid">
-        <Field label="Checking" hint="Enter your current bank balance. Processing purchases stay reserved until you confirm they are already deducted from this balance.">
+        <Field label="Checking" hint="Enter the checking balance Ledger should plan from. Paid purchases are not subtracted again; update this balance whenever it changes.">
           <Input
             name="checking"
             type="number"
@@ -133,8 +129,6 @@ export function CashProfileForm({
         </Field>
       </div>
 
-      <label className="field-hint"><input type="checkbox" name="includes_recorded_spending" checked={includesRecordedSpending} onChange={event => setIncludesRecordedSpending(event.currentTarget.checked)} /> All recorded purchases are already deducted from this checking balance.</label>
-      <p className="field-hint">Leave this unchecked while a purchase is still processing and has not reduced the balance above. Ledger cannot check your bank; saving alone keeps recorded purchases pending.</p>
 
       <div className="money-record-list">
         {accounts.map((a) =>

@@ -44,13 +44,12 @@ def build_pay_period_allowance(session: Session, *, as_of: date, through: date,
     optional = [row for row in transactions if row.category.strip().casefold() == 'discretionary'
                 and row.amount > 0]
     spent = sum(cents(row.amount) for row in optional if row.transaction_date >= period_start)
-    pending = sum(cents(row.amount) for row in optional if not row.reflected_in_checking)
     daily_changes: dict[date, int] = {}
     for row in payment_rows:
         day = date.fromisoformat(row['date'])
         amount = cents(row['amount']) * (1 if row['kind'] == 'income' else -1)
         daily_changes[day] = daily_changes.get(day, 0) + amount
-    cash = cents(opening_cash) - pending
+    cash = cents(opening_cash)
     balances = {}
     day = as_of
     while day <= through:
@@ -103,7 +102,7 @@ def build_pay_period_allowance(session: Session, *, as_of: date, through: date,
         constraints.append((limit, day))
     # The current allowance can be spent immediately, before today's income.
     initial_held = max(0, (current or 0) - outside_checking)
-    initial_available = cents(opening_cash) - pending - initial_held
+    initial_available = cents(opening_cash) - initial_held
     initial_limit = (Decimal(initial_available + spent) / 2 if initial_available >= spent
                      else Decimal(initial_available))
     constraints.append((initial_limit, as_of))
