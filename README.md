@@ -4,18 +4,24 @@
 # Ledger
 ### Know what you can spend. Keep tomorrow covered.
 
-A local-first personal CFO with a built-in financial AI assistant and advanced cash-flow planning. Cover your bills, build your emergency cushion, and make more room for the things you enjoy—with a conservative allowance that helps your discretionary money last and grow over time.
+**Free and open source under MIT, including commercial use.** A local-first personal CFO with a built-in financial AI assistant and advanced cash-flow planning. Cover your bills, build your emergency cushion, and make more room for the things you enjoy—with a conservative allowance that helps your discretionary money last and grow over time.
 
 [Get started](#get-started) · [AI assistant](#your-built-in-financial-ai-assistant) · [Advanced planning](#advanced-planning-to-grow-your-disposable-income) · [Latest release](https://github.com/SketchOTP/Ledger/releases/latest) · [Privacy](docs/privacy.md)
 
 ![CI](https://github.com/SketchOTP/Ledger/actions/workflows/ci.yml/badge.svg)
-![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 </div>
 
 ![Ledger Today dashboard with fictional household data](docs/screenshots/today-desktop.jpg)
 
 *Actual Ledger interface. All screenshots use fictional demo data.*
+
+## What’s new in v1.1.0
+
+Ledger is now MIT licensed: use it at home, adapt it for your workflow, or build on it commercially. This release brings together the latest paid/unpaid purchase behavior, conservative biweekly allowance, six-month planning, clear zero/negative-balance messages, and refreshed screenshots from the real app. Existing records remain compatible.
+
+[Download v1.1.0](https://github.com/SketchOTP/Ledger/releases/tag/v1.1.0) · [Explore Ledger on Animus Machinae](https://animusmachinae.com/releases/#ledger)
 
 ## Your money, at a glance
 
@@ -112,14 +118,14 @@ To update, back up first, then run `git pull --ff-only` and `docker compose up -
 
 The [release page](https://github.com/SketchOTP/Ledger/releases/latest) also includes:
 
-- **Ledger-v1.0.1.zip** — reviewed source plus the compiled web interface. Extract it and follow the Python setup below; you can skip the npm commands.
-- **Ledger-v1.0.1-linux-amd64-docker.tar.gz** — a ready-built image for x86-64 Linux containers. Download it, then:
+- **Ledger-v1.1.0.zip** — reviewed source plus the compiled web interface. Extract it and follow the Python setup below; you can skip the npm commands.
+- **Ledger-v1.1.0-linux-amd64-docker.tar.gz** — a ready-built image for x86-64 Linux containers. Download it, then:
 
 ```bash
-docker load -i Ledger-v1.0.1-linux-amd64-docker.tar.gz
+docker load -i Ledger-v1.1.0-linux-amd64-docker.tar.gz
 docker run -d --name ledger --restart unless-stopped \
   -p 127.0.0.1:9543:9543 \
-  -v ledger-data:/var/lib/ledger sketchotp/ledger:1.0.1
+  -v ledger-data:/var/lib/ledger sketchotp/ledger:1.1.0
 ```
 
 Open http://localhost:9543. The release includes SHA-256 checksums. For other architectures, build from source with Compose; the prebuilt image was verified on Linux amd64.
@@ -170,6 +176,6 @@ npm --prefix frontend run build
 
 Backend: FastAPI + SQLModel + SQLite. Frontend: React + TypeScript + Vite. Deterministic calculations precede optional AI explanations. Internal `LEDGERMIND_*` setting names are retained for compatibility.
 
-## License and commercial permission
+## License
 
-Copyright 2026 SketchOTP. Ledger is **source available under [PolyForm Noncommercial 1.0.0](LICENSE)**. You may use, modify, and share it for purposes permitted by that license. Selling Ledger, offering it as a paid service, or other commercial use requires separate written permission from the copyright holder. [Request commercial permission](https://github.com/SketchOTP/Ledger/issues/new?title=Commercial%20permission%20request); please keep financial records and secrets out of public issues. See [NOTICE](NOTICE) and [third-party notices](THIRD_PARTY_NOTICES.md).
+Copyright 2026 SketchOTP. Ledger v1.1.0 and later are **[MIT licensed](LICENSE)**: free to use, modify, redistribute, and use commercially, subject to retaining the copyright and permission notice. No separate commercial permission is required. Earlier release archives keep their original license notices. Third-party components retain their own terms; see [NOTICE](NOTICE) and [third-party notices](THIRD_PARTY_NOTICES.md).

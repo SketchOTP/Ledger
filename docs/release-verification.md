@@ -1,5 +1,23 @@
 # Ledger release verification
 
+## 1.1.0 — Free and open source
+
+Release preparation: 2026-10-15. Ledger is now MIT licensed, including commercial use. A source audit confirmed that the latest running application behavior is present in this public release, with public safe defaults and synthetic test fixtures preserved. No financial behavior or database schema changed for this release.
+
+| Check | Result |
+| --- | --- |
+| Full backend regression and warning baseline on locked dependencies | PASSED — 608 tests, zero warnings |
+| Reserve/chart regression | PASSED — 11 tests |
+| Ruff and production frontend build | PASSED |
+| npm audit | PASSED — zero reported vulnerabilities at preparation |
+| Fresh packaged Docker auth/signup, paid spending, unchanged checking and future expenses | PASSED |
+| SPA root, Money and login deep links | PASSED |
+| Docker/source/UI/notice/template/requirements identity | PASSED — 290 files |
+| Actual desktop/Money/mobile interface screenshots | PASSED — isolated fictional household; no real financial records |
+| Gitleaks 8.30.1 source scan | PASSED — zero findings; official tool archive checksum verified |
+
+Screenshots were captured on 2026-10-15 from the actual release application. The mobile viewport check found no horizontal content overflow. Optional AI was not invoked and no AI answer was fabricated for marketing. Existing v1.0.x archives retain their original published notices. GitHub Actions qualifies the exact published source revision; archive checksums and the ZIP build manifest identify the downloadable bytes.
+
 ## 1.0.1 — Paid or unpaid purchases
 
 Release preparation: 2026-10-10. The patch removes purchase pending states and duplicate reservations against owner-entered checking, including older recorded purchases. Future unpaid essentials and discretionary allowance usage remain protected. No database migration or purchase re-entry is required.

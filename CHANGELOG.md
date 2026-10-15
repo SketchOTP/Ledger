@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 — Ledger, free and open source
+
+- Switch Ledger to MIT with explicit owner approval, including commercial use. Preserve earlier releases and third-party notices.
+- Audit the running app against public source: the latest planning, allowance, balance-status and paid/unpaid behavior is included.
+- Refresh the README, actual-interface screenshots with fictional records, setup and release downloads.
+- Publish Ledger on the Animus Machinae releases page. Existing household records remain compatible; no data migration is required.
+
 ## 1.0.1 — Paid or unpaid purchases
 
 - Remove the pending purchase stage for daily spending, groceries, and discretionary purchases.
